@@ -3,29 +3,19 @@ package com.codepath.apps.basictwitter;
 import java.util.ArrayList;
 
 import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import com.activeandroid.util.Log;
-import com.codepath.apps.basictwitter.models.Tweet;
-import com.codepath.apps.basictwitter.utils.EndlessScrollListener;
-import com.loopj.android.http.AsyncHttpResponseHandler;
-import com.loopj.android.http.JsonHttpResponseHandler;
 
 import android.app.Activity;
-import android.app.ActionBar;
-import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
-import android.widget.Toast;
-import android.os.Build;
+
+import android.util.Log;
+import com.codepath.apps.basictwitter.models.Tweet;
+import com.codepath.apps.basictwitter.utils.EndlessScrollListener;
+import com.loopj.android.http.JsonHttpResponseHandler;
+
+import eu.erikw.PullToRefreshListView;
 
 public class TwitterTimelineActivity extends Activity {
 	private static final String LOG_TAG = TwitterTimelineActivity.class.getSimpleName();
@@ -34,7 +24,7 @@ public class TwitterTimelineActivity extends Activity {
 	private TwitterRestClient mTwitterClient;
 //	private ArrayList<Tweet> tweets;
 	private TweetArrayAdapter tweetAdapter;
-	private ListView lvTweets;
+	private PullToRefreshListView	 lvTweets;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -42,26 +32,51 @@ public class TwitterTimelineActivity extends Activity {
 		Log.d(LOG_TAG, "onCreate");
 		setContentView(R.layout.activity_twitter_timeline);
 		mTwitterClient = TwitterClientApp.getRestClient();
-		lvTweets = (ListView) findViewById(R.id.lvTweets);
+		lvTweets = (PullToRefreshListView) findViewById(R.id.lvTweets);
 		tweetAdapter = new TweetArrayAdapter(this, new ArrayList<Tweet>());
 		lvTweets.setAdapter(tweetAdapter);
 		lvTweets.setOnScrollListener(new EndlessScrollListener() {
 			
 			@Override
 			public void onLoadMore(int page, int totalItemsCount) {
-				Toast.makeText(getApplicationContext(), "Page:" + String.valueOf(page) + "," + "TotalItemsCount:" + String.valueOf(totalItemsCount), 
-						Toast.LENGTH_SHORT).show();
 				customLoadMoreDataFromApi(totalItemsCount); 
 			}
 		});
+		lvTweets.setOnRefreshListener(new PullToRefreshListView.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                // Your code to refresh the list contents
+                // Make sure you call listView.onRefreshComplete()
+                // once the loading is done. This can be done from here or any
+                // place such as when the network request has completed successfully.
+                fetchTimelineAsync(0);
+            }
+        });
 		newTimeline();
 	}
 	
+	public void fetchTimelineAsync(int page) {
+		Log.d(LOG_TAG, "Pull To Refresh");
+		mTwitterClient.getHomeTimeline(MAX_COUNT, 0, new JsonHttpResponseHandler() {
+            public void onSuccess(JSONArray timelineArray) {
+            	Log.d(LOG_TAG, "fetchTimelineAsync::Success:" + timelineArray.toString());
+            	tweetAdapter.clear();
+            	tweetAdapter.addAll(Tweet.fromJSONArray(timelineArray));
+                lvTweets.onRefreshComplete();
+            }
+
+            public void onFailure(Throwable e) {
+                Log.d("DEBUG", "Fetch timeline error: " + e.toString());
+            }
+        });
+    }
+	
 	// Append more data into the adapter
     public void customLoadMoreDataFromApi(int itemsCount) {
-    	Toast.makeText(this, String.valueOf(itemsCount), Toast.LENGTH_SHORT).show();
-        Tweet tweetItem = tweetAdapter.getItem(itemsCount - 1);
-        populateTimeline(tweetItem.getUid());
+    	if (!tweetAdapter.isEmpty()) {
+    		Tweet tweetItem = tweetAdapter.getItem(tweetAdapter.getCount() - 1);
+    		populateTimeline(tweetItem.getUid());
+    	}
     }	
     
     private void newTimeline() {
@@ -76,7 +91,6 @@ public class TwitterTimelineActivity extends Activity {
 	    	    Log.d(LOG_TAG, "Success:" + timelineArray.toString());
 	    	    tweetAdapter.addAll(Tweet.fromJSONArray(timelineArray));
 	    	    long lastID = tweetAdapter.getItem(tweetAdapter.getCount() - 1).getUid();
-	    	    Toast.makeText(getApplicationContext(), "Last ID:" + String.valueOf(lastID), Toast.LENGTH_SHORT).show();
 	    	}
 	    	
 	    	@Override
