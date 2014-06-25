@@ -1,8 +1,11 @@
 package com.codepath.apps.basictwitter;
 
+import org.apache.http.client.protocol.RequestAddCookies;
 import org.scribe.builder.api.Api;
 import org.scribe.builder.api.TwitterApi;
 
+import android.app.Application;
+import android.app.DownloadManager.Request;
 import android.content.Context;
 import android.util.Log;
 
@@ -32,20 +35,21 @@ public class TwitterRestClient extends OAuthBaseClient {
     public static final String REST_CONSUMER_SECRET = "NauJLX8eUiumZGhCpxuI4ZW42RUYdPorQluYHXnZ1Mj6xHQ9F2"; // Change this
     public static final String REST_CALLBACK_URL = "oauth://cpbasicTweets"; // Change this (here and in manifest)
     
+	private int mAPIRequestCount;
+    
     public TwitterRestClient(Context context) {
         super(context, REST_API_CLASS, REST_URL, REST_CONSUMER_KEY, REST_CONSUMER_SECRET, REST_CALLBACK_URL);
     }
     
-    public void getHomeTimeline(int count, long max_id, AsyncHttpResponseHandler handler) {
+    public void getHomeTimeline(RequestParams params, AsyncHttpResponseHandler handler) {
     	Log.d(LOG_TAG, "getHomeTimeline");
     	String apiUrl = getApiUrl("statuses/home_timeline.json");
     	Log.d(LOG_TAG, "Api Url:" + apiUrl);
-    	RequestParams params = new RequestParams();
-    	params.put("count", String.valueOf(count));
-    	if (max_id > 0) {
-    	    params.put("max_id", String.valueOf(max_id));
+    	if (params != null) {
+    	    Log.d(LOG_TAG, "RequestParams:" + params.toString());
     	}
-    	Log.d(LOG_TAG, "RequestParams:" + params.toString());
+    	++mAPIRequestCount;
+    	Log.d(LOG_TAG, "Number of API calls:" + mAPIRequestCount);
     	client.get(apiUrl, params, handler);
     }
     
@@ -54,6 +58,7 @@ public class TwitterRestClient extends OAuthBaseClient {
     	String postTweetApiUrl = getApiUrl("statuses/update.json");
     	RequestParams params = new RequestParams();
     	params.put("status", tweetString);
+    	++mAPIRequestCount;
     	client.post(postTweetApiUrl, params, handler);
     }
     
@@ -62,8 +67,13 @@ public class TwitterRestClient extends OAuthBaseClient {
     	String currentUserApiUrl = getApiUrl("account/verify_credentials.json");
     	RequestParams params = new RequestParams();
     	params.put("skip_status", String.valueOf(true));
+    	++mAPIRequestCount;
     	client.get(currentUserApiUrl, handler);
     }
+    
+    public int getApiCount() {
+    	return mAPIRequestCount;
+	}
     
     // CHANGE THIS
     // DEFINE METHODS for different API endpoints here

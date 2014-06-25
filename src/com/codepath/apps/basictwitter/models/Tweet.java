@@ -4,24 +4,40 @@ import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.activeandroid.Model;
+import com.activeandroid.annotation.Column;
+import com.activeandroid.annotation.Column.ForeignKeyAction;
+import com.activeandroid.annotation.Table;
+import com.activeandroid.query.Select;
+
 import android.text.format.DateUtils;
 import android.util.Log;
 
-public class Tweet implements Serializable {
+@Table(name="tweets")
+public class Tweet extends Model implements Serializable {
 	private static final String LOG_TAG = Tweet.class.getSimpleName();
+	@Column(name="body")
 	private String body;
+	@Column(name="uid", unique = true, onUniqueConflict = Column.ConflictAction.REPLACE)
 	private long uid;
+	@Column(name="createdAt")
 	private String createdAt;
+	@Column(name="retweetCount")
 	private int retweetCount;
+	@Column(name="retweeted")
 	private boolean retweeted;
+	@Column(name="favorited")
 	private boolean favorited;
+	@Column(name="favoriteCount")
 	private int favoriteCount;
+	@Column(name = "user", onUpdate = ForeignKeyAction.CASCADE, onDelete = ForeignKeyAction.CASCADE)
 	private User user;
 	
 	public static Tweet fromJSON(JSONObject jsonObject) {
@@ -60,6 +76,17 @@ public class Tweet implements Serializable {
 	    	}
 	    }
 		return tweets;
+	}
+	
+	public static List<Tweet> getAll() {
+		return new Select()
+        .from(Tweet.class)
+        .orderBy("createdAt DESC")
+        .execute();
+	}
+	
+	public Tweet() {
+		super();
 	}
 
 	public String getBody() {
@@ -103,8 +130,7 @@ public class Tweet implements Serializable {
 		String relativeDate = "";
 		try {
 			long dateMillis = sf.parse(createdAt).getTime();
-			relativeDate = getTimeAbbrev(DateUtils.getRelativeTimeSpanString(dateMillis,
-					System.currentTimeMillis(), DateUtils.SECOND_IN_MILLIS).toString());
+			relativeDate = getRelativeTime(System.currentTimeMillis() - dateMillis);
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
@@ -112,31 +138,25 @@ public class Tweet implements Serializable {
 		return relativeDate;
 	}
 	
-	public String getTimeAbbrev(String relativeTimeSpan) {
-		String[] timeComps = relativeTimeSpan.split("\\s");
-		if (timeComps == null || timeComps.length < 3) {
-			return relativeTimeSpan;
-		} else {
-			if ("seconds".equals(timeComps[1]) || "second".equals(timeComps[1])) {
-				return (timeComps[0] + "s"); 
-			} else if ("minutes".equals(timeComps[1]) || "minute".equals(timeComps[1])) {
-				return (timeComps[0] + "m");
-			} else if ("hours".equals(timeComps[1]) || "hour".equals(timeComps[1])) {
-				return (timeComps[0] + "h");
-			} else if ("days".equals(timeComps[1]) || "day".equals(timeComps[1])) {
-				return (timeComps[0] + "d");
-			} else if ("weeks".equals(timeComps[1]) || "week".equals(timeComps[1])) {
-				return (timeComps[0] + "w");
-			} else if ("months".equals(timeComps[1]) || "month".equals(timeComps[1])) {
-				return (timeComps[0] + "months");
-			} else if ("years".equals(timeComps[1]) || "year".equals(timeComps[1])) {
-				return (timeComps[0] + "y");
-			} else {
-				return relativeTimeSpan;
-			}
-		}
-		
-	}
+	  private String getRelativeTime(long millis){
+	    if (millis < 1000) {
+	    	return "Now";
+	    } 
+	    long secs = millis / 1000;
+	    if(secs < 60){
+	      return "Now";
+	    }
+	    long mins = secs / 60;
+	    if(mins < 60){
+	      return mins+"m";
+	    }
+	    long hours = mins / 60;
+	    if(hours < 24){
+	      return hours+"h";
+	    }
+	    long days = hours/24;
+	    return days+"d";
+	  }
 	
 	@Override
 	public String toString() {

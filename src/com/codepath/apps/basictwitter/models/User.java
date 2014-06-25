@@ -1,18 +1,28 @@
 package com.codepath.apps.basictwitter.models;
 
 import java.io.Serializable;
+import java.util.List;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.activeandroid.Model;
+import com.activeandroid.annotation.Column;
+import com.activeandroid.annotation.Table;
+
 import android.util.Log;
 
-public class User implements Serializable {
+@Table(name="user")
+public class User extends Model implements Serializable {
 	private static final String LOG_TAG = User.class.getSimpleName();
 	
+	@Column(name="name")
 	private String name;
+	@Column(name="uid", unique = true, onUniqueConflict = Column.ConflictAction.REPLACE)
 	private long uid;
+	@Column(name="screenName")
 	private String screenName;
+	@Column(name="profileImageUrl")
 	private String profileImageUrl;
 	
 	public static User fromJSON(JSONObject userObject) {
@@ -27,7 +37,11 @@ public class User implements Serializable {
 		}
 		return user;
 	}
-
+	
+	public User() {
+		super();
+	}
+	
 	public String getName() {
 		return name;
 	}
@@ -43,4 +57,8 @@ public class User implements Serializable {
 	public String getProfileImageUrl() {
 		return profileImageUrl;
 	}
+	
+	public List<Tweet> items() {
+        return getMany(Tweet.class, "User");
+    }
 }

@@ -9,17 +9,19 @@
         android:targetSdkVersion="18" />
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
-        android:name="com.codepath.apps.basictwitter.TwitterClientApp"
+        android:name="com.activeandroid.app.Application"
         android:allowBackup="true"
         android:icon="@drawable/ic_twitter"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <meta-data
             android:name="AA_DB_NAME"
-            android:value="RestClient.db" />
+            android:value="Tweets.db" />
         <meta-data
             android:name="AA_DB_VERSION"
             android:value="1" />
@@ -50,10 +52,15 @@
         <activity
             android:name="com.codepath.apps.basictwitter.TweetActivity"
             android:label=""
-            android:parentActivityName="com.codepath.apps.basictwitter.TwitterTimelineActivity"  >
+            android:parentActivityName="com.codepath.apps.basictwitter.TwitterTimelineActivity" >
             <meta-data
-            android:name="android.support.PARENT_ACTIVITY"
-            android:value="com.codepath.apps.basictwitter.TwitterTimelineActivity" /> 
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.codepath.apps.basictwitter.TwitterTimelineActivity" />
+        </activity>
+        <activity
+            android:name="com.codepath.apps.basictwitter.TweetDetailsActivity"
+            android:label="@string/title_activity_tweet_details"
+            android:parentActivityName="com.codepath.apps.basictwitter.TwitterTimelineActivity" >
         </activity>
     </application>
 
