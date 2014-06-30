@@ -55,11 +55,11 @@ public class TweetFetcher {
 		}.execute();
 	}
 
-	public synchronized void loadNewTweets() {
+	public synchronized void loadNewTweets(final boolean pullToRefresh) {
 		RequestParams params = new RequestParams();
 		Log.d(LOG_TAG, "Loading New Tweets from Twitter API");
-		if (!mTweetArrayAdapter.isEmpty()) {
-			params.put("since_id", String.valueOf(mTweetArrayAdapter.getItem(0).getUid()));
+		if (pullToRefresh && !mTweetArrayAdapter.isEmpty()) {
+			params.put("since_id", String.valueOf(mTweetArrayAdapter.getItem(0).getUid() + 1));
 		} else {
 			params = null;
 		}
@@ -69,9 +69,15 @@ public class TweetFetcher {
 			public void onSuccess(JSONArray timelineArray) {
 				Log.d(LOG_TAG, "Success. Number of results:" + timelineArray.length());
 				List<Tweet> results = Tweet.fromJSONArray(timelineArray);
-				for(int i=results.size()-1;i>0;--i) {
-					mTweetArrayAdapter.insert(results.get(i), 0);    	
+				if (pullToRefresh) {
+					for(int i=results.size()-1;i>=0;--i) {
+						Log.d(LOG_TAG, "Inserting tweet:" + results.get(i).toString());
+						mTweetArrayAdapter.insert(results.get(i), 0);    	
+					}
+				} else {
+					mTweetArrayAdapter.addAll(results);
 				}
+				mTweetArrayAdapter.notifyDataSetChanged();
 			} 
 			
 			@Override
@@ -85,6 +91,77 @@ public class TweetFetcher {
 				}
 			}
 		});
+	}
+	
+	public void loadNewMentions(final boolean pullToRefresh) {
+		RequestParams params = new RequestParams();
+		Log.d(LOG_TAG, "Loading New Tweets from Twitter API");
+		if (pullToRefresh && !mTweetArrayAdapter.isEmpty()) {
+			params.put("since_id", String.valueOf(mTweetArrayAdapter.getItem(0).getUid() + 1));
+		} else {
+			params = null;
+		}
+		Log.d(LOG_TAG, "Number of API calls:" + mTwitterClient.getApiCount());
+		mTwitterClient.getMentionsTimeline(params, new JsonHttpResponseHandler() {
+			@Override
+			public void onSuccess(JSONArray timelineArray) {
+				Log.d(LOG_TAG, "Success. Number of results:" + timelineArray.length());
+				List<Tweet> results = Tweet.fromJSONArray(timelineArray);
+				if (pullToRefresh) {
+					for(int i=results.size()-1;i>=0;--i) {
+						Log.d(LOG_TAG, "Inserting tweet:" + results.get(i).toString());
+						mTweetArrayAdapter.insert(results.get(i), 0);    	
+					}
+				} else {
+					mTweetArrayAdapter.addAll(results);
+				}
+				mTweetArrayAdapter.notifyDataSetChanged();
+			} 
+			
+			@Override
+			public void onFailure(Throwable t, JSONObject errorObject) {
+				Log.e(LOG_TAG, "Failure:" + errorObject.toString(), t);
+				try {
+					JSONArray errorArray = errorObject.getJSONArray("errors");
+					Toast.makeText(mContext, errorArray.getJSONObject(0).getString("message"), Toast.LENGTH_SHORT).show();
+				} catch (JSONException e) {
+					Log.e(LOG_TAG, "JSONException", e);
+				}
+			}
+		});
+	}
+	
+	public void loadMoreMentions() {
+		Toast.makeText(mContext, "Scrolling-Adapter Size:" + mTweetArrayAdapter.getCount(), Toast.LENGTH_SHORT).show();
+		RequestParams params = new RequestParams();
+		Log.d(LOG_TAG, "Loading Tweets from Twitter API");
+		if (!mTweetArrayAdapter.isEmpty()) {
+			long max_id = mTweetArrayAdapter.getItem(mTweetArrayAdapter.getCount()-1).getUid();
+			params.put("max_id", String.valueOf(max_id));
+		} 
+		params.put("count", String.valueOf(MAX_COUNT));
+		Log.d(LOG_TAG, "Number of API calls:" + mTwitterClient.getApiCount());
+		mTwitterClient.getMentionsTimeline(params, new JsonHttpResponseHandler() {
+			@Override
+			public void onSuccess(JSONArray timelineArray) {
+				Log.d(LOG_TAG, "Success. Number of results:" + timelineArray.length());
+				List<Tweet> results = Tweet.fromJSONArray(timelineArray);
+				if (!results.isEmpty()) {
+					mTweetArrayAdapter.addAll(results);
+				}
+			} 
+			
+			@Override
+			public void onFailure(Throwable t, JSONObject errorObject) {
+				Log.e(LOG_TAG, "Failure:" + errorObject.toString(), t);
+				try {
+					JSONArray errorArray = errorObject.getJSONArray("errors");
+					Toast.makeText(mContext, errorArray.getJSONObject(0).getString("message"), Toast.LENGTH_SHORT).show();
+				} catch (JSONException e) {
+					Log.e(LOG_TAG, "JSONException", e);
+				}
+			}
+		});	
 	}
 	
 	public synchronized void loadMoreTweets() {

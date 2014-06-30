@@ -53,6 +53,18 @@ public class TwitterRestClient extends OAuthBaseClient {
     	client.get(apiUrl, params, handler);
     }
     
+    public void getMentionsTimeline(RequestParams params, AsyncHttpResponseHandler handler) {
+    	Log.d(LOG_TAG, "getHomeTimeline");
+    	String apiUrl = getApiUrl("statuses/mentions_timeline.json");
+    	Log.d(LOG_TAG, "Api Url:" + apiUrl);
+    	if (params != null) {
+    	    Log.d(LOG_TAG, "RequestParams:" + params.toString());
+    	}
+    	++mAPIRequestCount;
+    	Log.d(LOG_TAG, "Number of API calls:" + mAPIRequestCount);
+    	client.get(apiUrl, params, handler);
+    }
+    
     public void postTweets(String tweetString, AsyncHttpResponseHandler handler) {
     	Log.d(LOG_TAG, "postTweets");
     	String postTweetApiUrl = getApiUrl("statuses/update.json");

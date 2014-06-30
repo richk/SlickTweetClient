@@ -1,85 +1,74 @@
 package com.codepath.apps.basictwitter;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-
-import org.json.JSONArray;
-
+import android.app.ActionBar;
+import android.app.ActionBar.Tab;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.AdapterView;
-import android.util.Log;
 
+import com.codepath.apps.basictwitter.listeners.FragmentTabListener;
 import com.codepath.apps.basictwitter.models.Tweet;
-import com.codepath.apps.basictwitter.models.User;
-import com.codepath.apps.basictwitter.utils.EndlessScrollListener;
-import com.loopj.android.http.JsonHttpResponseHandler;
-import com.loopj.android.http.RequestParams;
+import com.codepath.apps.basictwitter.ui.fragments.HomeTimelineFragment;
+import com.codepath.apps.basictwitter.ui.fragments.MentionsTimelineFragment;
+import com.codepath.apps.basictwitter.ui.fragments.TweetsListFragment;
+import com.codepath.apps.basictwitter.utils.Utils;
 
-import eu.erikw.PullToRefreshListView;
+import eu.erikw.PullToRefreshListView.OnRefreshListener;
 
-public class TwitterTimelineActivity extends Activity {
+public class TwitterTimelineActivity extends Activity implements OnRefreshListener{
 	private static final String LOG_TAG = TwitterTimelineActivity.class.getSimpleName();
-
-	private TweetFetcher mTweetFetcher;
-	private TweetArrayAdapter tweetAdapter;
-	private PullToRefreshListView lvTweets;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		Log.d(LOG_TAG, "onCreate");
 		setContentView(R.layout.activity_twitter_timeline);
-		lvTweets = (PullToRefreshListView) findViewById(R.id.lvTweets);
-		tweetAdapter = new TweetArrayAdapter(this, new ArrayList<Tweet>());
-		lvTweets.setAdapter(tweetAdapter);
-		mTweetFetcher = new TweetFetcher(this, tweetAdapter);
-		lvTweets.setOnScrollListener(new EndlessScrollListener() {
-
-			@Override
-			public void onLoadMore(int page, int totalItemsCount) {
-				Log.d(LOG_TAG, "onLoadMore.Page:" + page + " | TotalItemsCount:" + totalItemsCount);
-				customLoadMoreDataFromApi(totalItemsCount);
-			}
-		});
-		lvTweets.setOnRefreshListener(new PullToRefreshListView.OnRefreshListener() {
-			@Override
-			public void onRefresh() {
-				if (isNetworkAvailable()) {
-					mTweetFetcher.loadNewTweets();
-				}
-				lvTweets.onRefreshComplete();
-			}
-		});
-		lvTweets.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-			@Override
-			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-				Log.d(LOG_TAG, "onItemClicked");
-				Intent detailIntent = new Intent(getApplicationContext(), TweetDetailsActivity.class);
-				detailIntent.putExtra("tweet", tweetAdapter.getItem(position));
-				startActivity(detailIntent);
-			}
-		});
-		if (!isNetworkAvailable()) {
-			mTweetFetcher.loadSavedTweets();
-		} 
+		setupTabs();
+//		fragmentTweetsList.getListView().setOnItemClickListener(new OnItemClickListener() {
+//			@Override
+//			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//				Log.d(LOG_TAG, "onItemClicked");
+//				Intent detailIntent = new Intent(getActivity(), TweetDetailsActivity.class);
+//				detailIntent.putExtra("tweet", mTweetAdapter.getItem(position));
+//				startActivity(detailIntent);
+//			}
+//		});
 	}
+	
+	private void setupTabs() {
+        ActionBar actionBar = getActionBar();
+        actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+        actionBar.setDisplayShowTitleEnabled(true);
 
-	public void customLoadMoreDataFromApi(int itemsCount) {
-		if (isNetworkAvailable()) {
-			mTweetFetcher.loadMoreTweets();
-		}
-	}	
+        Tab homeTab = actionBar
+            .newTab()
+            .setText("Home")
+            .setIcon(R.drawable.ic_home)
+            .setTag("HomeTimelineFragment")
+            .setTabListener(
+                new FragmentTabListener<HomeTimelineFragment>(R.id.flContainer, this, "home",
+                		HomeTimelineFragment.class));
+
+        actionBar.addTab(homeTab);
+        actionBar.selectTab(homeTab);
+
+        Tab mentionsTab = actionBar
+            .newTab()
+            .setText("Mentions")
+            .setIcon(R.drawable.ic_mentions)
+            .setTag("MentionsTimelineFragment")
+            .setTabListener(
+                new FragmentTabListener<MentionsTimelineFragment>(R.id.flContainer, this, "mentions",
+                		MentionsTimelineFragment.class));
+
+        actionBar.addTab(mentionsTab);
+    }
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -94,11 +83,10 @@ public class TwitterTimelineActivity extends Activity {
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (requestCode == 40 && resultCode == RESULT_OK) {
-			Tweet newTweet = (Tweet) data.getSerializableExtra("tweet");
-			tweetAdapter.insert(newTweet, 0);
-			tweetAdapter.notifyDataSetChanged();
-		}
+//		if (requestCode == 40 && resultCode == RESULT_OK) {
+//			Tweet newTweet = (Tweet) data.getSerializableExtra("tweet");
+//			fragmentTweetsList.insert(newTweet, 0);
+//		}
 	}
 
 	@Override
@@ -113,15 +101,32 @@ public class TwitterTimelineActivity extends Activity {
 	@Override
 	protected void onPause() {
 		super.onPause();
-		mTweetFetcher.saveTweets(tweetAdapter);
+//		fragmentTweetsList.saveTweets();
 	}
-
-	private Boolean isNetworkAvailable() {
-		ConnectivityManager connectivityManager 
-		= (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+	
+	public boolean isNetworkAvailable() {
+		ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
 		return activeNetworkInfo != null && activeNetworkInfo.isConnectedOrConnecting();
 	}
-	
-	
+
+//	@Override
+//	public void onLoadMore(int page, int totalItemsCount) {
+//		Log.d(LOG_TAG, "onLoadMore.Page:" + page + " | TotalItemsCount:" + totalItemsCount);
+//		customLoadMoreDataFromApi(totalItemsCount);
+//	}
+//	
+	public void customLoadMoreDataFromApi(int itemsCount) {
+		if (Utils.isNetworkAvailable()) {
+//			fragmentTweetsList.getTweetFetcher().loadMoreTweets();
+		}
+	}
+
+	@Override
+	public void onRefresh() {
+//		if (isNetworkAvailable()) {
+//			fragmentTweetsList.getTweetFetcher().loadNewTweets();
+//		}
+//		fragmentTweetsList.refreshComplete();
+	}
 }
