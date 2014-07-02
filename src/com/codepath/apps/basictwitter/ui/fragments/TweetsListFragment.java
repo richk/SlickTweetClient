@@ -4,7 +4,11 @@ import java.util.ArrayList;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,27 +17,23 @@ import com.codepath.apps.basictwitter.R;
 import com.codepath.apps.basictwitter.TweetArrayAdapter;
 import com.codepath.apps.basictwitter.TweetFetcher;
 import com.codepath.apps.basictwitter.models.Tweet;
+import com.codepath.apps.basictwitter.utils.EndlessScrollListener;
+import com.codepath.apps.basictwitter.utils.Utils;
 
 import eu.erikw.PullToRefreshListView;
-import eu.erikw.PullToRefreshListView.OnRefreshListener;
 
 public class TweetsListFragment extends Fragment {
 	private static final String LOG_TAG = TweetsListFragment.class.getSimpleName();
 	
-	private PullToRefreshListView lvTweetsList;
+	protected PullToRefreshListView lvTweetsList;
 	protected TweetArrayAdapter mTweetAdapter;
 	
-	private OnRefreshListener mRefreshListener;
 	protected TweetFetcher mTweetFetcher;
-	
-	public interface OnEndlessScrollListener {
-		public void onLoadMore(int page, int totalItemsCount);
-	}
+	protected ConnectivityManager mConnectivityManager;
 	
 	@Override
 	public void onAttach(Activity activity) {
 		super.onAttach(activity);
-		mRefreshListener = (OnRefreshListener) activity;
 	}
 
 	@Override
@@ -51,9 +51,19 @@ public class TweetsListFragment extends Fragment {
 		// Assign our view references
 		lvTweetsList = (PullToRefreshListView) v.findViewById(R.id.lvTweets);
 		lvTweetsList.setAdapter(mTweetAdapter);
-		lvTweetsList.setOnRefreshListener(mRefreshListener);
+		lvTweetsList.setOnScrollListener(new EndlessScrollListener() {
+			
+			@Override
+			public void onLoadMore(int page, int totalItemsCount) {
+			    customLoadMore(page, totalItemsCount);	
+			}
+		});
 		// Return the layout view
 		return v;
+	}
+	
+	public void customLoadMore(int page, int totalItemsCount) {
+		Log.d(LOG_TAG, "customLoadMore::doNothing");
 	}
 	
 	public void insert(Tweet tweet, int index) {
@@ -65,4 +75,15 @@ public class TweetsListFragment extends Fragment {
 	public void refreshComplete() {
 		lvTweetsList.onRefreshComplete();
 	}
+	
+	protected boolean isNetworkAvailable() {
+		return Utils.isNetworkAvailable();
+	}
+	
+	@Override
+	public void onPause() {
+		super.onPause();
+		mTweetFetcher.saveTweets(mTweetAdapter);
+	}
+	
 }

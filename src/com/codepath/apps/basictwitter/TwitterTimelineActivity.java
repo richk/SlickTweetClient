@@ -13,15 +13,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import com.codepath.apps.basictwitter.listeners.FragmentTabListener;
-import com.codepath.apps.basictwitter.models.Tweet;
 import com.codepath.apps.basictwitter.ui.fragments.HomeTimelineFragment;
 import com.codepath.apps.basictwitter.ui.fragments.MentionsTimelineFragment;
-import com.codepath.apps.basictwitter.ui.fragments.TweetsListFragment;
-import com.codepath.apps.basictwitter.utils.Utils;
 
-import eu.erikw.PullToRefreshListView.OnRefreshListener;
-
-public class TwitterTimelineActivity extends Activity implements OnRefreshListener{
+public class TwitterTimelineActivity extends Activity {
 	private static final String LOG_TAG = TwitterTimelineActivity.class.getSimpleName();
 
 	@Override
@@ -104,29 +99,10 @@ public class TwitterTimelineActivity extends Activity implements OnRefreshListen
 //		fragmentTweetsList.saveTweets();
 	}
 	
-	public boolean isNetworkAvailable() {
-		ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-		NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-		return activeNetworkInfo != null && activeNetworkInfo.isConnectedOrConnecting();
-	}
-
-//	@Override
-//	public void onLoadMore(int page, int totalItemsCount) {
-//		Log.d(LOG_TAG, "onLoadMore.Page:" + page + " | TotalItemsCount:" + totalItemsCount);
-//		customLoadMoreDataFromApi(totalItemsCount);
-//	}
-//	
-	public void customLoadMoreDataFromApi(int itemsCount) {
-		if (Utils.isNetworkAvailable()) {
-//			fragmentTweetsList.getTweetFetcher().loadMoreTweets();
-		}
-	}
-
-	@Override
-	public void onRefresh() {
-//		if (isNetworkAvailable()) {
-//			fragmentTweetsList.getTweetFetcher().loadNewTweets();
-//		}
-//		fragmentTweetsList.refreshComplete();
+	public void onProfileView(MenuItem menuItem) {
+		Log.d(LOG_TAG, "Profile View Selected");
+		Intent i = new Intent(this, ProfileActivity.class);
+		i.putExtra("profileType", 0);
+		startActivity(i);
 	}
 }

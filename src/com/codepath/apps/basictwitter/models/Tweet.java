@@ -23,6 +23,12 @@ import android.util.Log;
 @Table(name="tweets")
 public class Tweet extends Model implements Serializable {
 	private static final String LOG_TAG = Tweet.class.getSimpleName();
+	public static enum TWEET_TYPE {
+		HOME,
+		MENTIONS,
+		USER
+	}
+	
 	@Column(name="body")
 	private String body;
 	@Column(name="uid", unique = true, onUniqueConflict = Column.ConflictAction.REPLACE)
@@ -39,8 +45,10 @@ public class Tweet extends Model implements Serializable {
 	private int favoriteCount;
 	@Column(name = "user", onUpdate = ForeignKeyAction.CASCADE, onDelete = ForeignKeyAction.CASCADE)
 	private User user;
+	@Column(name="tweetType")
+	private int tweetType;
 	
-	public static Tweet fromJSON(JSONObject jsonObject) {
+	public static Tweet fromJSON(JSONObject jsonObject, int type) {
 		Tweet tweet = new Tweet();
 		// Extract json to polupate member variables
 		try {
@@ -54,13 +62,14 @@ public class Tweet extends Model implements Serializable {
 		    }
 		    tweet.retweetCount = jsonObject.getInt("retweet_count");
 		    tweet.retweeted = jsonObject.getBoolean("retweeted");
+		    tweet.tweetType = type;
 		} catch (JSONException je) {
 			Log.e("Error", "JSONException", je);
 		}
 		return tweet;
 	}
 	
-	public static ArrayList<Tweet> fromJSONArray(JSONArray tweetArray) {
+	public static ArrayList<Tweet> fromJSONArray(JSONArray tweetArray, int type) {
 		ArrayList<Tweet> tweets = new ArrayList<Tweet>();
 		for (int i=0;i<tweetArray.length();++i) {
 	    	JSONObject tweetObject = null;
@@ -70,7 +79,7 @@ public class Tweet extends Model implements Serializable {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-	    	Tweet tweet = Tweet.fromJSON(tweetObject);
+	    	Tweet tweet = Tweet.fromJSON(tweetObject, type);
 	    	if (tweet != null) {
 	    	    tweets.add(tweet);
 	    	}
@@ -78,9 +87,10 @@ public class Tweet extends Model implements Serializable {
 		return tweets;
 	}
 	
-	public static List<Tweet> getAll() {
+	public static List<Tweet> getAll(int type) {
 		return new Select()
         .from(Tweet.class)
+        .where("tweetType = ?", type)
         .orderBy("createdAt DESC")
         .execute();
 	}
@@ -120,8 +130,11 @@ public class Tweet extends Model implements Serializable {
 	public int getFavoriteCount() {
 		return favoriteCount;
 	}
-
 	
+	public int getTweetType() {
+		return tweetType;
+	}
+
 	public String getRelativeTimeAgo() {
 		String twitterFormat = "EEE MMM dd HH:mm:ss ZZZZZ yyyy";
 		SimpleDateFormat sf = new SimpleDateFormat(twitterFormat, Locale.ENGLISH);

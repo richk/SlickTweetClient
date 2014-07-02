@@ -28,6 +28,7 @@ public class TweetFetcher {
 	private TwitterRestClient mTwitterClient;
 	private Context mContext;
 	private TweetArrayAdapter mTweetArrayAdapter;
+	private boolean moreMentionsAvailable = true;
 
 	public TweetFetcher(Context context, TweetArrayAdapter adapter) {
 		mTwitterClient = TwitterClientApp.getRestClient();
@@ -35,14 +36,14 @@ public class TweetFetcher {
 		mTweetArrayAdapter = adapter;
 	}
 
-	public synchronized void loadSavedTweets() {
+	public synchronized void loadSavedTweets(final int type) {
 		Log.d(LOG_TAG, "Loading saved tweets");
 		new AsyncTask<Void, Void, List<Tweet>>() {
 
 			@Override
 			protected List<Tweet> doInBackground(Void... params) {
 				Log.d(LOG_TAG, "Retrieving saved tweets from db");
-				return Tweet.getAll();	
+				return Tweet.getAll(type);	
 			}
 
 			@Override
@@ -68,7 +69,7 @@ public class TweetFetcher {
 			@Override
 			public void onSuccess(JSONArray timelineArray) {
 				Log.d(LOG_TAG, "Success. Number of results:" + timelineArray.length());
-				List<Tweet> results = Tweet.fromJSONArray(timelineArray);
+				List<Tweet> results = Tweet.fromJSONArray(timelineArray, Tweet.TWEET_TYPE.HOME.ordinal());
 				if (pullToRefresh) {
 					for(int i=results.size()-1;i>=0;--i) {
 						Log.d(LOG_TAG, "Inserting tweet:" + results.get(i).toString());
@@ -93,9 +94,9 @@ public class TweetFetcher {
 		});
 	}
 	
-	public void loadNewMentions(final boolean pullToRefresh) {
+	public synchronized void loadNewMentions(final boolean pullToRefresh) {
 		RequestParams params = new RequestParams();
-		Log.d(LOG_TAG, "Loading New Tweets from Twitter API");
+		Log.d(LOG_TAG, "Loading New Mentions from Twitter API");
 		if (pullToRefresh && !mTweetArrayAdapter.isEmpty()) {
 			params.put("since_id", String.valueOf(mTweetArrayAdapter.getItem(0).getUid() + 1));
 		} else {
@@ -106,7 +107,7 @@ public class TweetFetcher {
 			@Override
 			public void onSuccess(JSONArray timelineArray) {
 				Log.d(LOG_TAG, "Success. Number of results:" + timelineArray.length());
-				List<Tweet> results = Tweet.fromJSONArray(timelineArray);
+				List<Tweet> results = Tweet.fromJSONArray(timelineArray, Tweet.TWEET_TYPE.MENTIONS.ordinal());
 				if (pullToRefresh) {
 					for(int i=results.size()-1;i>=0;--i) {
 						Log.d(LOG_TAG, "Inserting tweet:" + results.get(i).toString());
@@ -131,21 +132,26 @@ public class TweetFetcher {
 		});
 	}
 	
-	public void loadMoreMentions() {
+	public synchronized void loadMoreMentions() {
 		Toast.makeText(mContext, "Scrolling-Adapter Size:" + mTweetArrayAdapter.getCount(), Toast.LENGTH_SHORT).show();
+		Log.d(LOG_TAG, "loadMoreMentions(). Number of items already in mentions adapter=" + mTweetArrayAdapter.getCount());
+		Log.d(LOG_TAG, "Since_id:" + mTweetArrayAdapter.getItem(0).getUid() + 
+				" | Max_id:" + mTweetArrayAdapter.getItem(mTweetArrayAdapter.getCount()-1).getUid());
 		RequestParams params = new RequestParams();
-		Log.d(LOG_TAG, "Loading Tweets from Twitter API");
+		Log.d(LOG_TAG, "Loading Mentions from Twitter API");
 		if (!mTweetArrayAdapter.isEmpty()) {
-			long max_id = mTweetArrayAdapter.getItem(mTweetArrayAdapter.getCount()-1).getUid();
-			params.put("max_id", String.valueOf(max_id));
-		} 
-		params.put("count", String.valueOf(MAX_COUNT));
+			long max_id = mTweetArrayAdapter.getItem(mTweetArrayAdapter.getCount()-1).getUid() + 1;
+			params.put("max_id", String.valueOf(max_id) + 1);
+		} else {
+			params = null;
+		}
 		Log.d(LOG_TAG, "Number of API calls:" + mTwitterClient.getApiCount());
 		mTwitterClient.getMentionsTimeline(params, new JsonHttpResponseHandler() {
 			@Override
 			public void onSuccess(JSONArray timelineArray) {
-				Log.d(LOG_TAG, "Success. Number of results:" + timelineArray.length());
-				List<Tweet> results = Tweet.fromJSONArray(timelineArray);
+				Log.d(LOG_TAG, "Success. Result:" + timelineArray.toString());
+				List<Tweet> results = Tweet.fromJSONArray(timelineArray, Tweet.TWEET_TYPE.MENTIONS.ordinal());
+				Log.d(LOG_TAG, "Number of tweets retrieved from mentions API:" + results.size());
 				if (!results.isEmpty()) {
 					mTweetArrayAdapter.addAll(results);
 				}
@@ -178,7 +184,7 @@ public class TweetFetcher {
 			@Override
 			public void onSuccess(JSONArray timelineArray) {
 				Log.d(LOG_TAG, "Success. Number of results:" + timelineArray.length());
-				List<Tweet> results = Tweet.fromJSONArray(timelineArray);
+				List<Tweet> results = Tweet.fromJSONArray(timelineArray, Tweet.TWEET_TYPE.HOME.ordinal());
 				if (!results.isEmpty()) {
 					mTweetArrayAdapter.addAll(results);
 				}
@@ -212,6 +218,29 @@ public class TweetFetcher {
 				return null;	
 			}
 		}.execute();
-		
+	}
+	
+	public void loadUserTweets() {
+		Log.d(LOG_TAG, "loadUserTimeline");
+		mTwitterClient.getUserTimeline(null, new JsonHttpResponseHandler() {
+
+			@Override
+			public void onSuccess(JSONArray result) {
+				mTweetArrayAdapter.addAll(Tweet.fromJSONArray(result, Tweet.TWEET_TYPE.USER.ordinal()));
+			}
+		});
+	}
+	
+	public void loadUserTweets(String screenName) {
+		Log.d(LOG_TAG, "loadUserTimeline. Screen Name:" + screenName);
+		RequestParams params = new RequestParams();
+		params.put("screen_name", screenName);
+		mTwitterClient.getUserTimeline(params, new JsonHttpResponseHandler() {
+
+			@Override
+			public void onSuccess(JSONArray result) {
+				mTweetArrayAdapter.addAll(Tweet.fromJSONArray(result, Tweet.TWEET_TYPE.USER.ordinal()));
+			}
+		});
 	}
 }

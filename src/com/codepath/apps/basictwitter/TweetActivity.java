@@ -108,7 +108,7 @@ public class TweetActivity extends Activity {
 			@Override
 			public void onSuccess(JSONObject response) {
 				Log.d(LOG_TAG, "onSuccess:" + response.toString());
-				Tweet newTweet = Tweet.fromJSON(response);
+				Tweet newTweet = Tweet.fromJSON(response, Tweet.TWEET_TYPE.HOME.ordinal());
 				Intent data = new Intent();
 				data.putExtra("tweet", newTweet);
 				setResult(RESULT_OK, data);

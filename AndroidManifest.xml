@@ -62,6 +62,11 @@
             android:label="@string/title_activity_tweet_details"
             android:parentActivityName="com.codepath.apps.basictwitter.TwitterTimelineActivity" >
         </activity>
+        <activity
+            android:name="com.codepath.apps.basictwitter.ProfileActivity"
+            android:label="@string/title_activity_profile"
+            android:parentActivityName="com.codepath.apps.basictwitter.TwitterTimelineActivity" >
+        </activity>
     </application>
 
 </manifest>

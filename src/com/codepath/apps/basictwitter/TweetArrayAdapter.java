@@ -7,9 +7,11 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
 import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
@@ -34,13 +36,24 @@ public class TweetArrayAdapter extends ArrayAdapter<Tweet> {
 	
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
-	    Tweet tweet = getItem(position);
+	    final Tweet tweet = getItem(position);
 	    ViewHolder viewHolder = null;
 	    if (convertView == null) {
 	    	LayoutInflater inflater = LayoutInflater.from(getContext());
 	    	convertView = inflater.inflate(R.layout.tweet_item, parent, false);
 	    	viewHolder = new ViewHolder();
 	    	viewHolder.profileImage = (ImageView) convertView.findViewById(R.id.ivProfileImage);
+	    	viewHolder.profileImage.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View view) {
+					Log.d(LOG_TAG, "Tweet selected. User screen name:" + tweet.getUser().getScreenName());
+				    Intent i = new Intent(getContext(), ProfileActivity.class);
+				    i.putExtra("profileType", 1);
+				    i.putExtra("screen_name", tweet.getUser().getScreenName());
+				    i.putExtra("user_id", tweet.getUser().getUid());
+					getContext().startActivity(i);
+				}
+			});
 	    	viewHolder.tweetBody = (TextView) convertView.findViewById(R.id.tvBody);
 	    	viewHolder.name = (TextView) convertView.findViewById(R.id.tvFullName);
 	    	viewHolder.screenName = (TextView) convertView.findViewById(R.id.tvScreenName);

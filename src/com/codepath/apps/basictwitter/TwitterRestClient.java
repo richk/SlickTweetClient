@@ -54,7 +54,7 @@ public class TwitterRestClient extends OAuthBaseClient {
     }
     
     public void getMentionsTimeline(RequestParams params, AsyncHttpResponseHandler handler) {
-    	Log.d(LOG_TAG, "getHomeTimeline");
+    	Log.d(LOG_TAG, "getMentionsTimeline");
     	String apiUrl = getApiUrl("statuses/mentions_timeline.json");
     	Log.d(LOG_TAG, "Api Url:" + apiUrl);
     	if (params != null) {
@@ -81,6 +81,28 @@ public class TwitterRestClient extends OAuthBaseClient {
     	params.put("skip_status", String.valueOf(true));
     	++mAPIRequestCount;
     	client.get(currentUserApiUrl, handler);
+    }
+    
+    public void getUserTimeline(RequestParams params, AsyncHttpResponseHandler handler) {
+    	Log.d(LOG_TAG, "getUserTimeline");
+    	String currentUserApiUrl = getApiUrl("statuses/user_timeline.json");	
+    	client.get(currentUserApiUrl, params, handler);
+    }
+    
+    public void getUserInfo(AsyncHttpResponseHandler handler, long uid) {
+    	Log.d(LOG_TAG, "getUserInfo");
+    	String userApiUrl = getApiUrl("users/show.json");
+    	RequestParams params = new RequestParams();
+    	params.put("user_id", String.valueOf(uid));
+    	client.get(userApiUrl, params, handler);
+    }
+    
+    public void getUserInfo(AsyncHttpResponseHandler handler, String screen_name) {
+    	Log.d(LOG_TAG, "getUserInfo");
+    	String userApiUrl = getApiUrl("users/show.json");
+    	RequestParams params = new RequestParams();
+    	params.put("screen_name", screen_name);
+    	client.get(userApiUrl, params, handler);
     }
     
     public int getApiCount() {
