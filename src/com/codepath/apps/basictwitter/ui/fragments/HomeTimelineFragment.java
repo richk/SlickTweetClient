@@ -7,7 +7,9 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.codepath.apps.basictwitter.TweetFetcher;
+import com.codepath.apps.basictwitter.TweetFetcher.FETCH_MODE;
 import com.codepath.apps.basictwitter.models.Tweet;
+import com.codepath.apps.basictwitter.models.Tweet.TWEET_TYPE;
 
 import eu.erikw.PullToRefreshListView.OnRefreshListener;
 
@@ -17,6 +19,7 @@ public class HomeTimelineFragment extends TweetsListFragment {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		Log.d(LOG_TAG, "OnCreate()+");
 //		mTweetFetcher.loadNewTweets(false);
 	}
 	
@@ -29,7 +32,7 @@ public class HomeTimelineFragment extends TweetsListFragment {
 			@Override
 			public void onRefresh() {
 				if (isNetworkAvailable()) {
-					mTweetFetcher.loadNewTweets(true);
+					mTweetFetcher.loadTweets(Tweet.TWEET_TYPE.HOME, FETCH_MODE.NEW, null, mTweetAdapter.getItem(0).getUid(), -1);
 				}
 				lvTweetsList.onRefreshComplete();
 			}
@@ -43,6 +46,11 @@ public class HomeTimelineFragment extends TweetsListFragment {
 	
 	public void customLoadMore(int page, int totalItemsCount) {
 		Log.d(LOG_TAG, "customLoadMore::HomeTimelineFragment");
-		mTweetFetcher.loadMoreTweets();
+		if (!mTweetAdapter.isEmpty()) {
+			mTweetFetcher.loadTweets(TWEET_TYPE.HOME, FETCH_MODE.OLD, null, -1, 
+					mTweetAdapter.getItem(mTweetAdapter.getCount()-1).getUid()-1);
+		} else {
+			mTweetFetcher.loadTweets(TWEET_TYPE.HOME, FETCH_MODE.ALL, null, -1,-1);
+		}
 	}
 }

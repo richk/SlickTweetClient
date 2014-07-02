@@ -85,7 +85,8 @@ public class TwitterRestClient extends OAuthBaseClient {
     
     public void getUserTimeline(RequestParams params, AsyncHttpResponseHandler handler) {
     	Log.d(LOG_TAG, "getUserTimeline");
-    	String currentUserApiUrl = getApiUrl("statuses/user_timeline.json");	
+    	String currentUserApiUrl = getApiUrl("statuses/user_timeline.json");
+    	Log.d(LOG_TAG, "Api Url:" + currentUserApiUrl);
     	client.get(currentUserApiUrl, params, handler);
     }
     

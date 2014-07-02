@@ -1,6 +1,8 @@
 package com.codepath.apps.basictwitter.ui.fragments;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -16,13 +18,17 @@ import android.view.ViewGroup;
 import com.codepath.apps.basictwitter.R;
 import com.codepath.apps.basictwitter.TweetArrayAdapter;
 import com.codepath.apps.basictwitter.TweetFetcher;
+import com.codepath.apps.basictwitter.TwitterClientApp;
+import com.codepath.apps.basictwitter.TweetFetcher.FETCH_MODE;
+import com.codepath.apps.basictwitter.TweetFetcher.ResultsCallback;
 import com.codepath.apps.basictwitter.models.Tweet;
+import com.codepath.apps.basictwitter.models.Tweet.TWEET_TYPE;
 import com.codepath.apps.basictwitter.utils.EndlessScrollListener;
 import com.codepath.apps.basictwitter.utils.Utils;
 
 import eu.erikw.PullToRefreshListView;
 
-public class TweetsListFragment extends Fragment {
+public class TweetsListFragment extends Fragment implements ResultsCallback {
 	private static final String LOG_TAG = TweetsListFragment.class.getSimpleName();
 	
 	protected PullToRefreshListView lvTweetsList;
@@ -30,6 +36,7 @@ public class TweetsListFragment extends Fragment {
 	
 	protected TweetFetcher mTweetFetcher;
 	protected ConnectivityManager mConnectivityManager;
+	private AtomicBoolean isLoadingTweets = new AtomicBoolean(false);
 	
 	@Override
 	public void onAttach(Activity activity) {
@@ -39,8 +46,9 @@ public class TweetsListFragment extends Fragment {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		Log.d(LOG_TAG, "OnCreate()+");
 		mTweetAdapter = new TweetArrayAdapter(getActivity(), new ArrayList<Tweet>());
-		mTweetFetcher = new TweetFetcher(getActivity(), mTweetAdapter);
+		mTweetFetcher = new TweetFetcher(getActivity(), this);
 	}
 
 	@Override
@@ -67,8 +75,16 @@ public class TweetsListFragment extends Fragment {
 	}
 	
 	public void insert(Tweet tweet, int index) {
-		mTweetAdapter.insert(tweet, index);
-		mTweetAdapter.notifyDataSetChanged();
+		mTweetFetcher.loadTweets(Tweet.TWEET_TYPE.HOME, FETCH_MODE.NEW, null, mTweetAdapter.getItem(0).getUid(), -1);
+		if (isLoadingTweets.compareAndSet(false, true)) {
+			try {
+				Utils.waitForBooleanFlag(isLoadingTweets, false, 1000);
+			} catch (Exception e) {
+				Log.e(LOG_TAG, "Interrupted", e);
+			}
+			mTweetAdapter.insert(tweet, index);
+			mTweetAdapter.notifyDataSetChanged();
+		}
 	}
 
 	
@@ -77,7 +93,10 @@ public class TweetsListFragment extends Fragment {
 	}
 	
 	protected boolean isNetworkAvailable() {
-		return Utils.isNetworkAvailable();
+		ConnectivityManager connectivityManager = (ConnectivityManager) 
+				getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+		return activeNetworkInfo != null && activeNetworkInfo.isConnectedOrConnecting();
 	}
 	
 	@Override
@@ -85,5 +104,34 @@ public class TweetsListFragment extends Fragment {
 		super.onPause();
 		mTweetFetcher.saveTweets(mTweetAdapter);
 	}
+
+	@Override
+	public void onResults(List<Tweet> tweets, FETCH_MODE mode) {
+		switch(mode) {
+		case ALL : 
+			mTweetAdapter.clear();
+			mTweetAdapter.addAll(tweets);
+			break;
+		case NEW :
+			List<Tweet> newTweets = new ArrayList<Tweet>(mTweetAdapter.getCount() + tweets.size());
+			newTweets.addAll(tweets);
+			for (int i=0;i<mTweetAdapter.getCount();++i) {
+				newTweets.add(mTweetAdapter.getItem(i));
+			}
+			mTweetAdapter.clear();
+			mTweetAdapter.addAll(newTweets);
+			break;
+		case OLD :
+			mTweetAdapter.addAll(tweets);
+			break;
+	    default :
+		}
+		isLoadingTweets.compareAndSet(true, false);
+	}
 	
+	@Override
+	public void onFailure(String message) {
+		Log.e(LOG_TAG, message);
+		isLoadingTweets.compareAndSet(true, false);
+	}
 }

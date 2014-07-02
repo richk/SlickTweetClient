@@ -1,6 +1,8 @@
 package com.codepath.apps.basictwitter.ui.fragments;
 
+import com.codepath.apps.basictwitter.TweetFetcher.FETCH_MODE;
 import com.codepath.apps.basictwitter.models.Tweet;
+import com.codepath.apps.basictwitter.models.Tweet.TWEET_TYPE;
 
 import eu.erikw.PullToRefreshListView.OnRefreshListener;
 import android.os.Bundle;
@@ -15,7 +17,7 @@ public class MentionsTimelineFragment extends TweetsListFragment {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-//		mTweetFetcher.loadNewMentions(false);
+		Log.d(LOG_TAG, "OnCreate()+");
 	}
 	
 	@Override
@@ -27,20 +29,22 @@ public class MentionsTimelineFragment extends TweetsListFragment {
 			@Override
 			public void onRefresh() {
 				if (isNetworkAvailable()) {
-					mTweetFetcher.loadNewMentions(true);
+					mTweetFetcher.loadTweets(TWEET_TYPE.MENTIONS, FETCH_MODE.NEW, null, mTweetAdapter.getItem(0).getUid(), -1);
 				}
 				lvTweetsList.onRefreshComplete();
 			}
 		});		
-//		if (!isNetworkAvailable()) {
-//			mTweetFetcher.loadSavedTweets(Tweet.TWEET_TYPE.MENTIONS.ordinal());
-//		}
 		return v;
 	}
 	
 	public void customLoadMore(int page, int totalItemsCount) {
 		Log.d(LOG_TAG, "customLoadMore::MentionsTimelineFragment");
-		mTweetFetcher.loadMoreMentions();
+		if (!mTweetAdapter.isEmpty()) {
+			mTweetFetcher.loadTweets(TWEET_TYPE.MENTIONS, FETCH_MODE.OLD, null, -1, 
+					mTweetAdapter.getItem(mTweetAdapter.getCount()-1).getUid()-1);
+		} else {
+			mTweetFetcher.loadTweets(TWEET_TYPE.MENTIONS, FETCH_MODE.ALL, null, -1,-1);
+		}
 	}
 	
 //	
