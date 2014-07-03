@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
+import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -14,15 +15,16 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 
 import com.codepath.apps.basictwitter.R;
 import com.codepath.apps.basictwitter.TweetArrayAdapter;
+import com.codepath.apps.basictwitter.TweetDetailsActivity;
 import com.codepath.apps.basictwitter.TweetFetcher;
-import com.codepath.apps.basictwitter.TwitterClientApp;
 import com.codepath.apps.basictwitter.TweetFetcher.FETCH_MODE;
 import com.codepath.apps.basictwitter.TweetFetcher.ResultsCallback;
 import com.codepath.apps.basictwitter.models.Tweet;
-import com.codepath.apps.basictwitter.models.Tweet.TWEET_TYPE;
 import com.codepath.apps.basictwitter.utils.EndlessScrollListener;
 import com.codepath.apps.basictwitter.utils.Utils;
 
@@ -37,10 +39,22 @@ public class TweetsListFragment extends Fragment implements ResultsCallback {
 	protected TweetFetcher mTweetFetcher;
 	protected ConnectivityManager mConnectivityManager;
 	private AtomicBoolean isLoadingTweets = new AtomicBoolean(false);
+	protected OnProgressListener mProgressListener;
+	
+	public interface OnProgressListener {
+		public void onProgressStart();
+		public void onProgressEnd();
+	}
 	
 	@Override
 	public void onAttach(Activity activity) {
 		super.onAttach(activity);
+		if (activity instanceof OnProgressListener) {
+			mProgressListener = (OnProgressListener) activity;
+		} else {
+	        throw new ClassCastException(activity.toString()
+	                + " must implement TweetsListFragment.OnProgressListener");
+	    }
 	}
 
 	@Override
@@ -66,6 +80,17 @@ public class TweetsListFragment extends Fragment implements ResultsCallback {
 			    customLoadMore(page, totalItemsCount);	
 			}
 		});
+		lvTweetsList.setOnItemClickListener(new OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view, int position,
+					long arg3) {
+				Log.d(LOG_TAG, "onItemClicked");
+				Intent detailIntent = new Intent(getActivity(), TweetDetailsActivity.class);
+				detailIntent.putExtra("tweet", mTweetAdapter.getItem(position));
+				startActivity(detailIntent);
+			}
+		});
+
 		// Return the layout view
 		return v;
 	}
@@ -127,11 +152,13 @@ public class TweetsListFragment extends Fragment implements ResultsCallback {
 	    default :
 		}
 		isLoadingTweets.compareAndSet(true, false);
+		mProgressListener.onProgressEnd();
 	}
 	
 	@Override
 	public void onFailure(String message) {
 		Log.e(LOG_TAG, message);
 		isLoadingTweets.compareAndSet(true, false);
+		mProgressListener.onProgressEnd();
 	}
 }

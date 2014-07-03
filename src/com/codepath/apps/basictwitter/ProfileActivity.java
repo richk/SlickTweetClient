@@ -10,16 +10,19 @@ import android.support.v4.app.NavUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Window;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.codepath.apps.basictwitter.models.User;
 import com.codepath.apps.basictwitter.ui.fragments.CurrentUserTimelineFragment;
+import com.codepath.apps.basictwitter.ui.fragments.TweetsListFragment.OnProgressListener;
 import com.codepath.apps.basictwitter.ui.fragments.UserTimelineFragment;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.nostra13.universalimageloader.core.ImageLoader;
 
-public class ProfileActivity extends Activity {
+public class ProfileActivity extends Activity implements OnProgressListener {
 	private static final String LOG_TAG = ProfileActivity.class.getSimpleName();
 	
 	protected TextView tvName;
@@ -27,6 +30,7 @@ public class ProfileActivity extends Activity {
 	protected TextView tvFollowers;
 	protected TextView tvFollowing;
 	protected ImageView ivProfileImage;
+	protected ProgressBar pbLoading;
 	
 	private CurrentUserTimelineFragment mCurrentUserTimeline;
 	private UserTimelineFragment mUserTimeline;
@@ -41,6 +45,7 @@ public class ProfileActivity extends Activity {
 		tvFollowers = (TextView) findViewById(R.id.tvFollowers);
 		tvFollowing = (TextView) findViewById(R.id.tvFollowing);
 		ivProfileImage = (ImageView) findViewById(R.id.ivProfileImage);
+		pbLoading = (ProgressBar) findViewById(R.id.pbLoading);
 		int profileType = getIntent().getIntExtra("profileType", 0);
 		Log.d(LOG_TAG, "Profile Type:" + profileType);
 		if (profileType == 0) {
@@ -75,12 +80,14 @@ public class ProfileActivity extends Activity {
 	}
 
 	private void loadUserInfo(String screenName) {
+		showProgressBar();
 		TwitterClientApp.getRestClient().getUserInfo(new JsonHttpResponseHandler() {
 
 			@Override
 			public void onFailure(Throwable t, JSONObject errorMessage) {
 				// TODO Auto-generated method stub
 				super.onFailure(t, errorMessage);
+				hideProgressBar();
 			}
 
 			@Override
@@ -89,17 +96,20 @@ public class ProfileActivity extends Activity {
 				Log.d(LOG_TAG, "User profile result:" + result.toString());
 				getActionBar().setTitle("@" + user.getScreenName());
 				populateProfileHeader(user);
+				hideProgressBar();
 			}
 		}, screenName);
 	}
 
 	public void loadProfileInfo() {
+		showProgressBar();
 		TwitterClientApp.getRestClient().getCurrentUser(new JsonHttpResponseHandler() {
 
 			@Override
 			public void onFailure(Throwable t, JSONObject errorMessage) {
 				// TODO Auto-generated method stub
 				super.onFailure(t, errorMessage);
+				hideProgressBar();
 			}
 
 			@Override
@@ -108,6 +118,7 @@ public class ProfileActivity extends Activity {
 				Log.d(LOG_TAG, "Current User profile result:" + result.toString());
 				getActionBar().setTitle("@" + user.getScreenName());
 				populateProfileHeader(user);
+				hideProgressBar();
 			}
 		});
 	}
@@ -141,4 +152,23 @@ public class ProfileActivity extends Activity {
 
 	    return super.onOptionsItemSelected(item);
 	}
+	
+	public void showProgressBar() {
+		pbLoading.setVisibility(ProgressBar.VISIBLE);	
+	}
+	
+    public void hideProgressBar() {
+    	pbLoading.setVisibility(ProgressBar.INVISIBLE);	
+	}
+
+	@Override
+	public void onProgressStart() {
+		showProgressBar();
+	}
+
+	@Override
+	public void onProgressEnd() {
+		hideProgressBar();
+	}
+
 }

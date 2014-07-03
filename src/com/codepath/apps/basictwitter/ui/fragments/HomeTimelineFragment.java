@@ -20,6 +20,12 @@ public class HomeTimelineFragment extends TweetsListFragment {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		Log.d(LOG_TAG, "OnCreate()+");
+		mProgressListener.onProgressStart();
+		if (isNetworkAvailable()) {
+		    mTweetFetcher.loadTweets(TWEET_TYPE.HOME, FETCH_MODE.ALL, null, -1, -1);
+		} else {
+			mTweetFetcher.loadSavedTweets(TWEET_TYPE.HOME.ordinal());
+		}
 //		mTweetFetcher.loadNewTweets(false);
 	}
 	
@@ -46,6 +52,7 @@ public class HomeTimelineFragment extends TweetsListFragment {
 	
 	public void customLoadMore(int page, int totalItemsCount) {
 		Log.d(LOG_TAG, "customLoadMore::HomeTimelineFragment");
+		mProgressListener.onProgressStart();
 		if (!mTweetAdapter.isEmpty()) {
 			mTweetFetcher.loadTweets(TWEET_TYPE.HOME, FETCH_MODE.OLD, null, -1, 
 					mTweetAdapter.getItem(mTweetAdapter.getCount()-1).getUid()-1);

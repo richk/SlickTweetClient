@@ -5,64 +5,79 @@ import android.app.ActionBar.Tab;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Window;
+import android.widget.ProgressBar;
 
 import com.codepath.apps.basictwitter.listeners.FragmentTabListener;
 import com.codepath.apps.basictwitter.ui.fragments.HomeTimelineFragment;
 import com.codepath.apps.basictwitter.ui.fragments.MentionsTimelineFragment;
+import com.codepath.apps.basictwitter.ui.fragments.TweetsListFragment.OnProgressListener;
 
-public class TwitterTimelineActivity extends Activity {
+public class TwitterTimelineActivity extends Activity implements OnProgressListener {
 	private static final String LOG_TAG = TwitterTimelineActivity.class.getSimpleName();
+	private static final String HOME_TAB_TAG = "HomeTimelineFragment";
+	private static final String MENTIONS_TAB_TAG = "MentionsTimelineFragment";
+	
+	private Tab mHomeTab;
+	private Tab mMentionsTab;
+	private ProgressBar pbHomeLoading;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		Log.d(LOG_TAG, "onCreate");
+		Log.d(LOG_TAG, "onCreate()+");
 		setContentView(R.layout.activity_twitter_timeline);
-		setupTabs();
-//		fragmentTweetsList.getListView().setOnItemClickListener(new OnItemClickListener() {
-//			@Override
-//			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-//				Log.d(LOG_TAG, "onItemClicked");
-//				Intent detailIntent = new Intent(getActivity(), TweetDetailsActivity.class);
-//				detailIntent.putExtra("tweet", mTweetAdapter.getItem(position));
-//				startActivity(detailIntent);
-//			}
-//		});
+		pbHomeLoading = (ProgressBar) findViewById(R.id.pbHomeLoading);
+		int currentNavigationIndex = 0;
+		if (savedInstanceState != null) {
+			currentNavigationIndex = savedInstanceState.getInt("currentTabIndex");
+			Log.d(LOG_TAG, "Current Selected Tab Index:" + currentNavigationIndex);
+			Log.d(LOG_TAG, "Number of tabs in action bar:" + getActionBar().getTabCount());
+		}
+		setupTabs(currentNavigationIndex);
 	}
 	
-	private void setupTabs() {
+	private void setupTabs(int selectedTabIndex) {
         ActionBar actionBar = getActionBar();
         actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
         actionBar.setDisplayShowTitleEnabled(true);
 
-        Tab homeTab = actionBar
-            .newTab()
-            .setText("Home")
-            .setIcon(R.drawable.ic_home)
-            .setTag("HomeTimelineFragment")
-            .setTabListener(
-                new FragmentTabListener<HomeTimelineFragment>(R.id.flContainer, this, "home",
-                		HomeTimelineFragment.class));
+        if (mHomeTab == null) {
+        	mHomeTab = actionBar
+        			.newTab()
+        			.setText("Home")
+        			.setIcon(R.drawable.ic_home)
+        			.setTag(HOME_TAB_TAG)
+        			.setTabListener(
+        					new FragmentTabListener<HomeTimelineFragment>(R.id.flContainer, this, "home",
+        							HomeTimelineFragment.class));
+        }
 
-        actionBar.addTab(homeTab);
-        actionBar.selectTab(homeTab);
+        if (mMentionsTab == null) {
+        	mMentionsTab = actionBar
+        			.newTab()
+        			.setText("Mentions")
+        			.setIcon(R.drawable.ic_mentions)
+        			.setTag(MENTIONS_TAB_TAG)
+        			.setTabListener(
+        					new FragmentTabListener<MentionsTimelineFragment>(R.id.flContainer, this, "mentions",
+        							MentionsTimelineFragment.class));	
+        }
 
-        Tab mentionsTab = actionBar
-            .newTab()
-            .setText("Mentions")
-            .setIcon(R.drawable.ic_mentions)
-            .setTag("MentionsTimelineFragment")
-            .setTabListener(
-                new FragmentTabListener<MentionsTimelineFragment>(R.id.flContainer, this, "mentions",
-                		MentionsTimelineFragment.class));
-
-        actionBar.addTab(mentionsTab);
+        actionBar.addTab(mHomeTab);
+        
+        actionBar.addTab(mMentionsTab);
+        
+        if (selectedTabIndex == 0) {
+            actionBar.selectTab(mHomeTab);
+        } else {
+        	actionBar.selectTab(mMentionsTab);
+        }
     }
 
 	@Override
@@ -99,10 +114,29 @@ public class TwitterTimelineActivity extends Activity {
 //		fragmentTweetsList.saveTweets();
 	}
 	
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		int currentTabIndex = getActionBar().getSelectedNavigationIndex(); 
+		outState.putInt("currentTabIndex", currentTabIndex);
+		Log.d(LOG_TAG, "Saving current selected tab index:" + currentTabIndex);
+	}
+
 	public void onProfileView(MenuItem menuItem) {
 		Log.d(LOG_TAG, "Profile View Selected");
 		Intent i = new Intent(this, ProfileActivity.class);
 		i.putExtra("profileType", 0);
 		startActivity(i);
+	}
+
+	@Override
+	public void onProgressStart() {
+		pbHomeLoading.setVisibility(ProgressBar.VISIBLE);
+		
+	}
+
+	@Override
+	public void onProgressEnd() {
+		pbHomeLoading.setVisibility(ProgressBar.INVISIBLE);
 	}
 }

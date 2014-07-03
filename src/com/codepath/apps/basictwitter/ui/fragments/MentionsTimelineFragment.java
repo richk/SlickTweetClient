@@ -18,6 +18,12 @@ public class MentionsTimelineFragment extends TweetsListFragment {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		Log.d(LOG_TAG, "OnCreate()+");
+		mProgressListener.onProgressStart();
+		if (isNetworkAvailable()) {
+		    mTweetFetcher.loadTweets(TWEET_TYPE.MENTIONS, FETCH_MODE.ALL, null, -1, -1);
+		} else {
+			mTweetFetcher.loadSavedTweets(TWEET_TYPE.MENTIONS.ordinal());
+		}
 	}
 	
 	@Override
@@ -39,6 +45,7 @@ public class MentionsTimelineFragment extends TweetsListFragment {
 	
 	public void customLoadMore(int page, int totalItemsCount) {
 		Log.d(LOG_TAG, "customLoadMore::MentionsTimelineFragment");
+		mProgressListener.onProgressStart();
 		if (!mTweetAdapter.isEmpty()) {
 			mTweetFetcher.loadTweets(TWEET_TYPE.MENTIONS, FETCH_MODE.OLD, null, -1, 
 					mTweetAdapter.getItem(mTweetAdapter.getCount()-1).getUid()-1);
