@@ -1,4 +1,4 @@
-*SlickTwitterClient
+SlickTwitterClient
 ===============
 
 Code path assignment - Twitter client for Android
@@ -36,10 +36,15 @@ Time Spent : 18 hours
 * [x] User can see picture, tagline, # of followers, # of following, and tweets of clicked user.
           ** Profile view should include that user's timeline
           ** Optional: User can view following / followers list through the profile
+* [x] When a network request is sent, user sees an indeterminate progress indicator         
+* [x] Improve the user interface and theme the app to feel twitter branded
+* [x] Robust error handling, check if internet is available, handle error cases, network failures
+
+          
 
 
 Walkthrough of all user stories:
 
-![Video Walkthrough](anim_twitter.gif)
-![Video Walkthrough](anim_twitter_1.gif)
-![Video Walkthrough](anim_twitter_2.gif)
+![Video Walkthrough](anim_twitter.gif) ---> Part 1
+![Video Walkthrough](anim_twitter_1.gif) ---> Part 1
+![Video Walkthrough](anim_twitter_2.gif) ---> Part 2
